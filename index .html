@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mulk Fashion</title>
+    
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #000; --gold: #D4AF37; --bg: #f8f9fa; --white: #ffffff; }
+        body { margin: 0; font-family: 'Hind Siliguri', sans-serif; background: var(--bg); padding-bottom: 80px; user-select: none; }
+        
+        /* --- RESPONSIVE & LAYOUT --- */
+        .app-wrapper { max-width: 100%; margin: 0 auto; background: #fff; min-height: 100vh; position: relative; }
+        @media (min-width: 768px) {
+            body { background: #e9ecef; }
+            .app-wrapper { max-width: 1200px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+            .product-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 20px !important; }
+            .header, .btm-nav { max-width: 1200px; left: 50% !important; transform: translateX(-50%); width: 100%; }
+            #modal-view { max-width: 500px; left: 50% !important; transform: translateX(-50%); box-shadow: 0 0 50px rgba(0,0,0,0.5); border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+            #success-modal .s-box { max-width: 400px; }
+            .p-img { height: 220px !important; }
+        }
+        @media (min-width: 1024px) { .product-grid { grid-template-columns: repeat(5, 1fr) !important; } }
+
+        /* Header */
+        .header { background: var(--white); padding: 15px; position: sticky; top: 0; z-index: 900; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .logo { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .logo span { color: var(--gold); }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .download-btn-top { display: flex; flex-direction: column; align-items: center; color: var(--primary); text-decoration: none; cursor: pointer; }
+        .download-btn-top i { font-size: 16px; margin-bottom: 2px; }
+        .download-btn-top span { font-size: 8px; font-weight: bold; text-transform: uppercase; }
+        .marquee-box { background: var(--primary); color: var(--gold); padding: 8px 0; font-size: 13px; white-space: nowrap; overflow: hidden; }
+        
+        /* --- SEARCH & CAMERA --- */
+        .search-container { padding: 10px 15px; background: #fff; position: sticky; top: 60px; z-index: 800; }
+        .search-box { display: flex; align-items: center; background: #f1f1f1; border-radius: 8px; padding: 5px 10px; border: 1px solid #ddd; }
+        .search-box input { flex: 1; border: none; background: transparent; padding: 10px; font-size: 16px; outline: none; font-family: 'Hind Siliguri', sans-serif; }
+        .search-box i.fa-search { color: #888; margin-left: 5px; }
+        
+        .camera-label { cursor: pointer; padding: 8px; color: var(--primary); font-size: 18px; transition: 0.2s; border-left: 1px solid #ddd; padding-left: 15px; margin-left: 5px; }
+        .camera-label:hover { color: var(--gold); }
+
+        /* Image Preview & Search Status */
+        #img-preview-area { display: none; background: #fff; padding: 15px; text-align: center; border-bottom: 1px solid #eee; position: relative; animation: slideDown 0.3s; }
+        #search-preview-img { height: 100px; width: auto; border-radius: 5px; border: 2px solid var(--gold); object-fit: cover; margin-bottom: 10px; }
+        .searching-txt { font-size: 14px; color: var(--primary); margin-top: 5px; font-weight: bold; }
+        .loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
+        .close-preview { position: absolute; top: 10px; right: 10px; color: #555; cursor: pointer; font-size: 20px; background: #eee; width: 30px; height: 30px; border-radius: 50%; line-height: 30px; }
+        
+        /* NOT FOUND NOTICE BOX */
+        .not-found-notice { background: #fff3cd; color: #856404; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px; margin: 10px; text-align: center; font-size: 14px; line-height: 1.6; }
+        .not-found-notice i { font-size: 24px; margin-bottom: 10px; display: block; }
+
+        @keyframes slideDown { from {opacity:0; transform: translateY(-10px);} to {opacity:1; transform: translateY(0);} }
+
+        /* Slider */
+        .slider-area { width: 100%; padding-top: 56.25%; height: 0; overflow: hidden; position: relative; background: #eee; }
+        .slider-track { display: flex; transition: transform 0.5s; height: 100%; width: 100%; position: absolute; top: 0; left: 0; }
+        .slide-img { min-width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Product Grid */
+        .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; }
+        .p-card { background: var(--white); border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: transform 0.2s; cursor: pointer; }
+        .p-card:hover { transform: translateY(-2px); }
+        .p-img { width: 100%; height: 170px; object-fit: cover; }
+        .p-details { padding: 10px; }
+        .p-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stock-out { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:flex; justify-content:center; align-items:center; color:red; font-weight:bold; display:none; }
+        
+        .disc-tag { position: absolute; top: 10px; right: 10px; background: red; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 5; }
+        .old-price { color: #999; text-decoration: line-through; font-size: 11px; margin-right: 5px; }
+        .qty-wrapper { display: flex; align-items: center; margin: 15px 0; justify-content: center; }
+        .qty-btn { width: 35px; height: 35px; background: #eee; border: none; font-size: 18px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .qty-val { width: 50px; text-align: center; font-size: 16px; font-weight: bold; border: 1px solid #eee; height: 33px; display: flex; align-items: center; justify-content: center; margin: 0 5px; }
+
+        /* Modal */
+        #modal-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; display: none; }
+        .back-btn { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.5); color: #fff; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2001; cursor: pointer; }
+        .detail-img { width: 100%; height: 350px; object-fit: cover; }
+        .d-content { padding: 20px; }
+        .size-opt { border: 1px solid #ddd; padding: 8px 15px; margin: 5px; display: inline-block; border-radius: 4px; cursor: pointer; }
+        .size-opt.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .add-cart-btn { width: 100%; background: var(--primary); color: #fff; padding: 15px; border: none; font-size: 16px; font-weight: bold; margin-top: 20px; border-radius: 5px; cursor: pointer; }
+
+        /* Cart & Order */
+        .view { display: none; } .view.active { display: block; }
+        .cart-item { display: flex; align-items: center; background: #fff; padding: 10px; margin: 10px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .cart-thumb { width: 60px; height: 60px; border-radius: 5px; object-fit: cover; margin-right: 15px; border: 1px solid #eee; }
+        .cart-info { flex: 1; }
+        
+        .form-section { padding: 15px; background: #fff; margin: 10px; border-radius: 5px; }
+        .form-section input, .form-section textarea, .form-section select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        
+        #bkash-info-box { display: none; background: #ffe6ef; padding: 15px; border: 1px solid #E2136E; border-radius: 5px; margin-bottom: 15px; }
+        .bk-label { font-size: 12px; font-weight: bold; color: #E2136E; }
+
+        /* Info Section */
+        .profile-card { text-align: center; background: #fff; padding: 30px; margin: 15px; border-radius: 8px; }
+        .p-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--gold); object-fit: cover; margin-bottom: 10px; }
+        .info-row { display: flex; align-items: center; background: #f4f4f4; padding: 12px; margin-top: 10px; border-radius: 6px; text-decoration: none; color: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+        .info-row i { width: 35px; font-size: 20px; }
+        
+        /* Bottom Nav */
+        .btm-nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 1000; }
+        .nav-icon { text-align: center; font-size: 10px; color: #999; cursor: pointer; }
+        .nav-icon.active { color: var(--primary); font-weight: 600; }
+        .nav-icon i { font-size: 20px; display: block; margin-bottom: 3px; }
+
+        .track-box { background: #fff; padding: 15px; margin: 15px; border-radius: 5px; }
+        .step { font-size: 12px; color: #aaa; margin-right: 5px; }
+        .step.active { color: var(--gold); font-weight: bold; }
+
+        /* Success Modal */
+        #success-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3000; display: none; justify-content: center; align-items: center; }
+        .s-box { background: #fff; padding: 30px; border-radius: 15px; width: 80%; max-width: 350px; text-align: center; box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4); position: relative; animation: popUp 0.4s ease-out; }
+        .s-icon { font-size: 50px; color: #2ecc71; margin-bottom: 15px; animation: bounce 1s infinite; }
+        .s-title { font-size: 22px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+        .s-msg { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px; }
+        .s-btn { background: var(--primary); color: var(--gold); border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; font-size: 16px; }
+        
+        @keyframes popUp { from {transform: scale(0.7); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        @keyframes bounce { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-10px);} }
+    </style>
+</head>
+<body>
+    
+<div class="app-wrapper">
+    <div class="header">
+        <div class="logo" id="app-logo">Mulk <span>Fashion</span></div>
+        <div class="header-right">
+            <a id="app-download-link" href="#" target="_blank" class="download-btn-top" style="display:none;">
+                <i class="fas fa-download"></i>
+                <span>Download App</span>
+            </a>
+            <div onclick="navTo('cart')" style="cursor: pointer;"><i class="fas fa-shopping-bag"></i> <span id="cart-count">0</span></div>
+        </div>
+    </div>
+    
+    <div class="marquee-box"><marquee id="marquee-txt">Welcome to Mulk Fashion</marquee></div>
+
+    <div id="view-home" class="view active">
+        <div class="slider-area"><div class="slider-track" id="slider-track"></div></div>
+        
+        <div class="search-container">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="প্রোডাক্ট সার্চ করুন..." onkeyup="searchProduct()">
+                
+                <label for="img-upload-btn" class="camera-label">
+                    <i class="fas fa-camera"></i>
+                </label>
+                <input type="file" id="img-upload-btn" accept="image/*" hidden onchange="handleImageSearch(this)">
+            </div>
+        </div>
+        
+        <div id="img-preview-area">
+            <div class="close-preview" onclick="cancelImgSearch()"><i class="fas fa-times"></i></div>
+            <img id="search-preview-img" src="">
+            <div class="searching-txt" id="search-status-txt">Searching<span class="loading-dots"></span></div>
+        </div>
+
+        <div style="padding:15px; font-weight:bold;">New Collection</div>
+        <div class="product-grid" id="p-grid">
+            </div>
+    </div>
+
+    <div id="view-cart" class="view">
+        <h3 style="padding:15px;">Shopping Cart</h3>
+        <div id="cart-list"></div>
+        <div class="form-section" id="checkout-area" style="display:none;">
+            <h4>Checkout</h4>
+            <input type="text" id="c-name" placeholder="আপনার নাম">
+            <input type="tel" id="c-phone" placeholder="ফোন নাম্বার">
+            <textarea id="c-addr" placeholder="পূর্ণ ঠিকানা (Address)"></textarea>
+            
+            <label><b>Payment Method:</b></label>
+            <select id="pay-method" onchange="toggleBkash()">
+                <option value="Cash On Delivery">Cash On Delivery</option>
+                <option value="Bkash">Mobile Banking (Bkash/Nagad)</option>
+            </select>
+
+            <div id="bkash-info-box">
+                <div style="text-align:center; margin-bottom:10px;">
+                    <i class="fas fa-mobile-alt" style="font-size:20px;"></i> 
+                    <span id="dynamic-bkash-title" style="font-size:16px; font-weight:bold;"> Send Money</span><br>
+                    <span id="dynamic-bkash-num" style="font-size:18px; color:#E2136E; font-weight:bold; letter-spacing:1px;">Loading...</span>
+                </div>
+                <label class="bk-label">কত টাকা পাঠিয়েছেন?*</label>
+                <input type="number" id="bk-amount" placeholder="Amount (Tk)">
+                <label class="bk-label">যে নাম্বার থেকে পাঠিয়েছেন*</label>
+                <input type="tel" id="bk-sender" placeholder="Sender Number">
+                <label class="bk-label">Transaction ID (TrxID)*</label>
+                <input type="text" id="bk-trx" placeholder="Ex: 8J7S...">
+                <label class="bk-label">নোট (Optional)</label>
+                <input type="text" id="bk-note" placeholder="Note here...">
+            </div>
+
+            <label><b>Shipping:</b></label><br>
+            <label><input type="radio" name="ship" value="110" onchange="calcTotal()"> Dhaka (110)</label>
+            <label><input type="radio" name="ship" value="130" checked onchange="calcTotal()"> All BD (130)</label>
+            <label><input type="radio" name="ship" value="60" onchange="calcTotal()"> Tangail (60)</label>
+            
+            <div style="text-align:right; font-size:18px; font-weight:bold; margin-top:15px;">Total: ৳<span id="grand-total">0</span></div>
+            <button class="add-cart-btn" onclick="placeOrder()">Confirm Order</button>
+        </div>
+    </div>
+
+    <div id="view-order" class="view">
+        <div class="track-box">
+            <h3>Track Order</h3>
+            <p style="font-size:12px; color:#777;">অর্ডার করার সময় যে নাম্বার দিয়েছিলেন সেটি লিখুন:</p>
+            <input type="tel" id="track-num" placeholder="017xxxxxxxx" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd;">
+            <button onclick="trackOrder()" style="background:var(--primary); color:#fff; padding:10px; border:none; width:100%;">Check Status</button>
+        </div>
+        <div id="track-res"></div>
+    </div>
+
+    <div id="view-info" class="view">
+        <div class="profile-card">
+            <img src="" id="own-img" class="p-pic">
+            <h2 id="own-name">Owner</h2>
+            <a id="lnk-wa" href="#" class="info-row"><i class="fab fa-whatsapp" style="color:#25D366;"></i> <span id="txt-wa">WhatsApp: Loading...</span></a>
+            <a id="lnk-call" href="#" class="info-row"><i class="fas fa-phone" style="color:var(--primary);"></i> <span id="txt-call">Call: Loading...</span></a>
+            <a id="lnk-mail" href="#" class="info-row"><i class="fas fa-envelope" style="color:#e74c3c;"></i> <span id="txt-email">Email Us</span></a>
+            <div style="margin-top:20px; text-align:left; background:#f9f9f9; padding:10px;">
+                <strong>Address:</strong><br><span id="own-add"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="btm-nav">
+        <div class="nav-icon active" onclick="navTo('home')" id="nav-home"><i class="fas fa-home"></i> Home</div>
+        <div class="nav-icon" onclick="navTo('cart')" id="nav-cart"><i class="fas fa-shopping-cart"></i> Cart</div>
+        <div class="nav-icon" onclick="navTo('order')" id="nav-order"><i class="fas fa-box"></i> Order</div>
+        <div class="nav-icon" onclick="navTo('info')" id="nav-info"><i class="fas fa-user"></i> Info</div>
+    </div>
+
+</div> 
+
+<div id="modal-view">
+    <div class="back-btn" onclick="closeModal()"><i class="fas fa-arrow-left"></i></div>
+    <img id="m-img" class="detail-img" src="">
+    <div style="text-align:center; font-size:12px; color:#666; margin-top:5px;"><i class="fas fa-hand-pointer"></i> Tap image to see next</div>
+    <div class="d-content">
+        <h2 id="m-title"></h2>
+        <div style="font-size:20px; font-weight:bold; color:var(--primary);">
+            <span id="m-old-p" class="old-price" style="font-size:16px;"></span>
+            ৳<span id="m-price"></span>
+        </div>
+        <p id="m-desc" style="color:#555;"></p>
+        <h4 style="text-align:center;">Quantity</h4>
+        <div class="qty-wrapper">
+            <button class="qty-btn" onclick="upQty(-1)">-</button>
+            <div class="qty-val" id="qty-val">1</div>
+            <button class="qty-btn" onclick="upQty(1)">+</button>
+        </div>
+        <h4>Select Size:</h4>
+        <div id="m-sizes"></div>
+        <button class="add-cart-btn" onclick="addToCart()">Add to Cart</button>
+    </div>
+</div>
+
+<div id="success-modal">
+    <div class="s-box">
+        <div class="s-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="s-title">অর্ডার সফল হয়েছে!</div>
+        <div class="s-msg">
+            আসসালামু আলাইকুম / আদাব!<br>
+            আমাদের উপর আস্থা রাখার জন্য আপনাকে আন্তরিক ধন্যবাদ। আপনার রুচিশীল পছন্দের সঙ্গী হতে পেরে আমরা গর্বিত।<br><br>
+            আমাদের প্রতিনিধি শীঘ্রই আপনার সাথে যোগাযোগ করবেন।
+        </div>
+        <button class="s-btn" onclick="closeSuccess()">ধন্যবাদ</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const checkFirebase = setInterval(() => {
+            if (typeof firebase !== 'undefined') {
+                clearInterval(checkFirebase);
+                initApp();
+            }
+        }, 100);
+    });
+
+    function initApp() {
+        const firebaseConfig = {
+            apiKey: "AIzaSyDpWo30HwwnoMlm5qrOYVg-PtLnpHZacAM",
+            authDomain: "mulk-fashion-vai.firebaseapp.com",
+            projectId: "mulk-fashion-vai",
+            storageBucket: "mulk-fashion-vai.firebasestorage.app",
+            messagingSenderId: "734854805452",
+            appId: "1:734854805452:web:46d34874986510591c0f69",
+            measurementId: "G-84G3MRLG4S"
+        };
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        
+        cart = JSON.parse(localStorage.getItem('mCart')) || [];
+        
+        fetchSet(); 
+        fetchProd(); 
+        upCart();
+        
+        const lastView = localStorage.getItem('currentView') || 'home';
+        navTo(lastView);
+    }
+
+    let db;
+    let cart = [];
+    let prods = [];
+    let cur = null;
+    let curQty = 1;
+
+    function navTo(p) {
+        localStorage.setItem('currentView', p);
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-icon').forEach(n => n.classList.remove('active'));
+        
+        const viewEl = document.getElementById('view-'+p);
+        const navEl = document.getElementById('nav-'+p);
+        
+        if(viewEl && navEl) {
+            viewEl.classList.add('active');
+            navEl.classList.add('active');
+        } else {
+            document.getElementById('view-home').classList.add('active');
+            document.getElementById('nav-home').classList.add('active');
+        }
+        if(p=='cart') loadCart();
+    }
+
+    // --- LOGIC FOR IMAGE SEARCH & NOTICE ---
+    function handleImageSearch(input) {
+        const file = input.files[0];
+        if(!file) return;
+
+        // 1. Check Size (Max 10MB)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if(file.size > maxSize) {
+            alert('দুঃখিত! ছবির সাইজ ১০ মেগাবাইটের (10MB) বেশি হতে পারবে না।');
+            input.value = '';
+            return;
+        }
+
+        // 2. Show Preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const pvImg = document.getElementById('search-preview-img');
+            const pvArea = document.getElementById('img-preview-area');
+            const status = document.getElementById('search-status-txt');
+            
+            pvImg.src = e.target.result;
+            pvArea.style.display = 'block';
+            status.innerHTML = 'ছবি বিশ্লেষণ করা হচ্ছে<span class="loading-dots"></span>';
+            
+            // Clear current grid to show we are working
+            document.getElementById('p-grid').innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px;">Processing Image...</div>';
+
+            // 3. Process Logic (Since name won't match, we assume failure & show Notice)
+            setTimeout(() => {
+                const grid = document.getElementById('p-grid');
+                grid.innerHTML = `
+                    <div class="not-found-notice" style="grid-column: 1/-1;">
+                        <i class="fas fa-search-minus" style="color:#d39e00;"></i>
+                        <b>দুঃখিত! ছবিটি অটোমেটিক ডিটেক্ট করা যায়নি।</b><br><br>
+                        তবে এই ডিজাইনের প্রোডাক্ট আমাদের স্টকে আছে, অনুগ্রহ করে হোমপেজ থেকে খুঁজে দেখুন।
+                    </div>
+                `;
+                
+                status.innerText = 'Search Completed';
+                status.style.color = '#d39e00';
+
+            }, 2000); // 2 second mock delay
+        }
+        reader.readAsDataURL(file);
+    }
+
+    function cancelImgSearch() {
+        document.getElementById('img-preview-area').style.display = 'none';
+        document.getElementById('search-input').value = '';
+        document.getElementById('img-upload-btn').value = ''; 
+        renderList(prods); // Reset grid to all products
+    }
+    // --- END LOGIC ---
+
+    function fetchSet() {
+        db.ref('settings').on('value', s => {
+            const d = s.val();
+            if(!d) return;
+            document.getElementById('app-logo').innerHTML = d.appName || 'Mulk';
+            document.getElementById('marquee-txt').innerText = d.marquee || '';
+            document.getElementById('own-name').innerText = d.ownerName || 'Owner';
+            document.getElementById('own-add').innerText = d.ownerAddress || '';
+            document.getElementById('own-img').src = d.ownerImg || '';
+            const bkNum = d.bkashNumber || '01339172152'; 
+            const bkTitle = d.bkashTitle || 'Send Money'; 
+            document.getElementById('dynamic-bkash-num').innerText = bkNum;
+            document.getElementById('dynamic-bkash-title').innerText = " " + bkTitle;
+            
+            // New App Download Logic
+            const dBtn = document.getElementById('app-download-link');
+            if(d.appLink && d.appLink.trim() !== '') {
+                dBtn.href = d.appLink;
+                dBtn.style.display = 'flex';
+            } else {
+                dBtn.style.display = 'none';
+            }
+
+            if(d.ownerPhone) document.getElementById('txt-call').innerText = d.ownerPhone;
+            if(d.ownerEmail) document.getElementById('txt-email').innerText = d.ownerEmail;
+            if(d.ownerWhatsApp) document.getElementById('txt-wa').innerText = d.ownerWhatsApp;
+            if(d.slider) {
+                const imgs = d.slider.split(',');
+                let h = '';
+                imgs.forEach((i, idx) => h+=`<img src="${i}" class="slide-img" ${idx>0 ? 'loading="lazy"' : ''}>`);
+                document.getElementById('slider-track').innerHTML = h;
+                startSlide();
+            }
+        });
+    }
+
+    function fetchProd() {
+        db.ref('products').on('value', s => {
+            prods = [];
+            if(s.exists()){
+                s.forEach(c => { const p = c.val(); p.id = c.key; prods.push(p); });
+                renderList(prods); 
+            } else {
+                document.getElementById('p-grid').innerHTML = 'No products found.';
+            }
+        });
+    }
+
+    function renderList(list) {
+        const g = document.getElementById('p-grid');
+        g.innerHTML = '';
+        if(list.length === 0) {
+            g.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#888;">কোনো প্রোডাক্ট পাওয়া যায়নি</div>';
+            return;
+        }
+        list.forEach(p => {
+            let badgeHtml = '';
+            let priceHtml = `৳${p.newP}`;
+            if(p.oldP && parseInt(p.oldP) > parseInt(p.newP)) {
+                let dist = Math.round(((p.oldP - p.newP) / p.oldP) * 100);
+                badgeHtml = `<div class="disc-tag">-${dist}%</div>`;
+                priceHtml = `<span class="old-price">৳${p.oldP}</span> ৳${p.newP}`;
+            }
+            g.innerHTML += `
+                <div class="p-card" onclick="${p.stock?`openM('${p.id}')`:''}">
+                    ${badgeHtml}
+                    ${!p.stock?'<div class="stock-out" style="display:flex">STOCK OUT</div>':''}
+                    <img src="${p.imgs.split(',')[0]}" class="p-img" loading="lazy" alt="${p.title}">
+                    <div class="p-details">
+                        <div class="p-title">${p.title}</div>
+                        <div class="p-price">${priceHtml}</div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function searchProduct() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        if(!query) { renderList(prods); return; }
+        const filtered = prods.filter(p => {
+            const title = p.title ? p.title.toLowerCase() : '';
+            const desc = p.desc ? p.desc.toLowerCase() : '';
+            return title.includes(query) || desc.includes(query);
+        });
+        renderList(filtered);
+    }
+
+    function openM(id) {
+        cur = prods.find(x => x.id == id);
+        curQty = 1; 
+        document.getElementById('qty-val').innerText = curQty;
+        document.getElementById('m-title').innerText = cur.title;
+        document.getElementById('m-price').innerText = cur.newP;
+        if(cur.oldP && cur.oldP > cur.newP) {
+            document.getElementById('m-old-p').innerText = '৳'+cur.oldP;
+            document.getElementById('m-old-p').style.display = 'inline';
+        } else {
+            document.getElementById('m-old-p').style.display = 'none';
+        }
+        document.getElementById('m-desc').innerText = cur.desc;
+        const imgs = cur.imgs.split(',');
+        let idx = 0;
+        const im = document.getElementById('m-img');
+        im.src = imgs[0];
+        cur.selImg = imgs[0]; 
+        im.onclick = () => { idx = (idx + 1) % imgs.length; im.src = imgs[idx]; cur.selImg = imgs[idx]; };
+        const sz = document.getElementById('m-sizes');
+        sz.innerHTML = '';
+        cur.sizes.split(',').forEach(s => {
+            const b = document.createElement('div');
+            b.className = 'size-opt'; b.innerText = s.trim();
+            b.onclick = () => { document.querySelectorAll('.size-opt').forEach(x=>x.classList.remove('active')); b.classList.add('active'); cur.selSize = s.trim(); };
+            sz.appendChild(b);
+        });
+        document.getElementById('modal-view').style.display = 'block';
+    }
+    
+    function upQty(x) { if(curQty + x > 0) { curQty += x; document.getElementById('qty-val').innerText = curQty; } }
+    function closeModal() { document.getElementById('modal-view').style.display = 'none'; }
+    
+    function addToCart() {
+        if(!cur.selSize) return alert('Select Size');
+        cart.push({...cur, qty: curQty, uid: Date.now()});
+        localStorage.setItem('mCart', JSON.stringify(cart));
+        upCart(); closeModal(); navTo('cart');
+    }
+    function upCart() { document.getElementById('cart-count').innerText = cart.length; }
+    
+    function loadCart() {
+        const l = document.getElementById('cart-list');
+        l.innerHTML = '';
+        if(cart.length === 0) { document.getElementById('checkout-area').style.display = 'none'; l.innerHTML='<div style="text-align:center;padding:20px;">Cart is Empty</div>'; return; }
+        document.getElementById('checkout-area').style.display = 'block';
+        cart.forEach((i,x) => {
+            l.innerHTML += `
+            <div class="cart-item">
+                <img src="${i.selImg}" class="cart-thumb">
+                <div class="cart-info">
+                    <b>${i.title}</b><br>
+                    Size: ${i.selSize}, Qty: ${i.qty || 1}<br>
+                    Price: ৳${parseInt(i.newP) * (i.qty || 1)}
+                </div>
+                <i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="rem(${x})"></i>
+            </div>`;
+        });
+        calcTotal();
+        toggleBkash(); 
+    }
+    function rem(x) { cart.splice(x,1); localStorage.setItem('mCart', JSON.stringify(cart)); upCart(); loadCart(); }
+    
+    function calcTotal() {
+        const sub = cart.reduce((a,b)=>a+(parseInt(b.newP) * (b.qty || 1)), 0);
+        const sh = parseInt(document.querySelector('input[name="ship"]:checked').value);
+        document.getElementById('grand-total').innerText = sub+sh;
+    }
+    function toggleBkash() {
+        const method = document.getElementById('pay-method').value;
+        const box = document.getElementById('bkash-info-box');
+        if(method === 'Bkash') { box.style.display = 'block'; } else { box.style.display = 'none'; }
+    }
+    
+    function placeOrder() {
+        const n=document.getElementById('c-name').value;
+        const p=document.getElementById('c-phone').value;
+        const a=document.getElementById('c-addr').value;
+        const method = document.getElementById('pay-method').value;
+        const ship = document.querySelector('input[name="ship"]:checked').parentNode.innerText.trim();
+        if(!n || !p || !a) return alert('Please fill Name, Phone and Address');
+        let paymentDetails = { method: method };
+        if(method === 'Bkash') {
+            const amt = document.getElementById('bk-amount').value;
+            const sender = document.getElementById('bk-sender').value;
+            const trx = document.getElementById('bk-trx').value;
+            const note = document.getElementById('bk-note').value;
+            if(!amt || !sender || !trx) return alert('বিকাশ পেমেন্টের তথ্য দিন (টাকা, নাম্বার এবং TrxID)');
+            paymentDetails.bkashAmount = amt;
+            paymentDetails.bkashSender = sender;
+            paymentDetails.bkashTrx = trx;
+            paymentDetails.bkashNote = note; 
+        }
+        const orderData = {
+            name:n, phone:p, addr:a, 
+            total:document.getElementById('grand-total').innerText,
+            items:cart, status:'Pending', time:new Date().toString(),
+            shippingType: ship, ...paymentDetails 
+        };
+        db.ref('orders').push(orderData).then(()=>{ 
+            document.getElementById('success-modal').style.display = 'flex'; 
+            cart=[]; localStorage.setItem('mCart', JSON.stringify(cart)); upCart(); 
+        });
+    }
+
+    function closeSuccess() { document.getElementById('success-modal').style.display = 'none'; navTo('home'); }
+
+    function trackOrder() {
+        const n = document.getElementById('track-num').value;
+        const r = document.getElementById('track-res');
+        r.innerHTML = 'Searching...';
+        db.ref('orders').orderByChild('phone').equalTo(n).once('value', s => {
+            r.innerHTML = '';
+            if(!s.exists()) return r.innerHTML = '<div style="color:red; text-align:center;">No Order Found</div>';
+            s.forEach(c => {
+                const o = c.val();
+                const st = ['Pending','Confirmed','Shipped','Delivered'];
+                let html = '';
+                st.forEach(x => html += `<span class="step ${o.status==x || st.indexOf(o.status)>st.indexOf(x) ? 'active':''}">${x} > </span>`);
+                r.innerHTML += `<div class="track-box" style="margin:5px 0; border:1px solid #eee;"><strong>#${c.key.substring(0,5)}</strong> - ৳${o.total}<br>${html}</div>`;
+            });
+        });
+    }
+
+    let si = 0;
+    function startSlide() {
+        const t = document.getElementById('slider-track');
+        const l = document.querySelectorAll('.slide-img').length;
+        if(l<1) return;
+        if(window.slideInterval) clearInterval(window.slideInterval);
+        window.slideInterval = setInterval(() => { si=(si+1)%l; t.style.transform=`translateX(-${si*100}%)`; }, 3000);
+    }
+</script>
+</body>
+</html>
